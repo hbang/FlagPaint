@@ -1,0 +1,10 @@
+{
+	entry = {
+		bundle = FlagPaint;
+		cell = PSLinkCell;
+		detail = HBFPListController;
+		icon = flagpaint.png;
+		isController = 1;
+		label = FlagPaint;
+	};
+}

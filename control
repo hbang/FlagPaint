@@ -1,0 +1,9 @@
+Package: ws.hbang.flagpaint
+Name: FlagPaint
+Depends: mobilesubstrate, preferenceloader, applist
+Version: 1.1~beta1
+Architecture: iphoneos-arm
+Description: Tint banners based on icon color
+Maintainer: HASHBANG Productions <flagpaint@hbang.ws>
+Author: HASHBANG Productions <flagpaint@hbang.ws>
+Section: Tweaks
