@@ -1,8 +1,6 @@
-#import "TogglerGlobal.h"
-#import "TogglerTogglesController.h"
-#import "TogglerSettingsViewController.h"
+#import "HBFPCustomTintsController.h"
 
-@implementation TogglerTogglesController
+@implementation HBFPCustomTintsController
 -(id)initForContentSize:(CGSize)size {
 	self = [super init];
 	if (self) {
@@ -35,7 +33,7 @@
 	[controller setParentController:self];
 }
 -(void)getApps {
-	
+
 }
 -(NSInteger)numberOfSectionsInTableView:(UITableView *)table {
 	return 1;
@@ -57,8 +55,8 @@
 	return cell;
 }
 -(void)addToggle {
-	TogglerSettingsViewController *add = [[TogglerSettingsViewController alloc] initWithStyle:UITableViewStyleGrouped];
+	/*TogglerSettingsViewController *add = [[TogglerSettingsViewController alloc] initWithStyle:UITableViewStyleGrouped];
 	UINavigationController *addCtrl = [[UINavigationController alloc] initWithRootViewController:add];
-	[self.navigationController presentModalViewController:addCtrl animated:YES];
+	[self.navigationController presentModalViewController:addCtrl animated:YES];*/
 }
 @end

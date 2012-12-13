@@ -1,7 +1,7 @@
 include theos/makefiles/common.mk
 
 BUNDLE_NAME = FlagPaint
-FlagPaint_FILES = $(wildcard *.mm)
+FlagPaint_FILES = HBFPListController.mm #$(wildcard *.mm)
 FlagPaint_INSTALL_PATH = /Library/PreferenceBundles
 FlagPaint_FRAMEWORKS = UIKit CoreGraphics
 FlagPaint_PRIVATE_FRAMEWORKS = Preferences

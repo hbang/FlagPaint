@@ -1,4 +1,5 @@
-#import "UIColor-Expanded.h"
+//#import "UIColor-Expanded.h"
+#import "HBFPColorArt.h"
 
 @interface SBBulletinBannerController : NSObject
 +(SBBulletinBannerController *)sharedInstance;
@@ -69,19 +70,29 @@ static UIColor *HBFPGetDominant(UIImage *image) {
 			UIImageView *bannerView = MSHookIvar<UIImageView *>(self, "_bannerView");
 			UIView *underlayView = MSHookIvar<UIView *>(self, "_underlayView");
 			UIColor *tint;
+			BOOL oldAlgorithm = NO;
 
-			if (NSArray *colors = [prefs objectForKey:[NSString stringWithFormat:@"Tint-%@", item._appName]]) {
+			/*if (NSArray *colors = [prefs objectForKey:[NSString stringWithFormat:@"Tint-%@", item._appName]]) {
 				tint = [UIColor colorWithRed:[[colors objectAtIndex:0] floatValue] green:[[colors objectAtIndex:1] floatValue] blue:[[colors objectAtIndex:2] floatValue] alpha:1];
-			} else {
+				oldAlgorithm = YES;
+			} else*/ if (getBool(@"OldAlgorithm", NO)) {
 				tint = HBFPGetDominant(item.iconImage);
+				oldAlgorithm = YES;
+			} else {
+				HBFPColorArt *tints = [[HBFPColorArt alloc] initWithImage:item.iconImage];
+				tint = tints.backgroundColor;
+				titleLabel.textColor = tints.primaryColor;
+				messageLabel.textColor = tints.secondaryColor;
 			}
 
 			bannerView.image = nil;
 			bannerView.backgroundColor = tint;
 			underlayView.backgroundColor = [UIColor clearColor];
 
-			const CGFloat *components = CGColorGetComponents(tint.CGColor);
-			titleLabel.textColor = messageLabel.textColor = ((components[0] * 299) + (components[1] * 587) + (components[2] * 114)) / 1000 < 125 ? [UIColor whiteColor] : [UIColor blackColor];
+			if (oldAlgorithm) {
+				const CGFloat *components = CGColorGetComponents(tint.CGColor);
+				titleLabel.textColor = messageLabel.textColor = ((components[0] * 299) + (components[1] * 587) + (components[2] * 114)) / 1000 < 125 ? [UIColor whiteColor] : [UIColor blackColor];
+			}
 		}
 
 		if (getBool(@"RemoveIcon", NO)) {
@@ -96,7 +107,7 @@ static UIColor *HBFPGetDominant(UIImage *image) {
 
 		if (getBool(@"Fade", YES)) {
 			[UIView animateWithDuration:0.5f animations:^{
-				self.alpha = semiTransparent ? 0.9f : 1;
+				self.alpha = getBool(@"Semitransparent", YES) ? 0.9f : 1;
 			}];
 		}
 	}
@@ -123,7 +134,7 @@ static UIColor *HBFPGetDominant(UIImage *image) {
 
 	if (getBool(@"CenterText", YES)) {
 		if (hasDietBulletin) {
-			float titleWidth = titleLabel.visible ? [titleLabel.text sizeWithFont:titleLabel.font].width : 0;
+			float titleWidth = titleLabel.hidden ? 0 : [titleLabel.text sizeWithFont:titleLabel.font].width;
 			float messageWidth = [messageLabel.text sizeWithFont:messageLabel.font].width;
 
 			if (titleWidth + 6.f + messageWidth < self.frame.size.width - 16.f) {
@@ -153,12 +164,6 @@ static UIColor *HBFPGetDominant(UIImage *image) {
 			titleLabel.textAlignment = UITextAlignmentCenter;
 			messageLabel.textAlignment = UITextAlignmentCenter;
 		}
-	}
-
-	if (getBool(@"Fade", YES)) {
-		[UIView animateWithDuration:0.5f animations:^{
-			self.alpha = semiTransparent ? 0.9f : 1;
-		}];
 	}
 }
 %end
