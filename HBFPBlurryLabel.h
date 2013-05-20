@@ -1,0 +1,2 @@
+@interface HBFPBlurryLabel : UILabel
+@end

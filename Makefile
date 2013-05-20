@@ -1,13 +1,12 @@
-TARGET = :clang::5.0
+TARGET = iphone:clang::5.0
 
 include theos/makefiles/common.mk
 
 THEOS_BUILD_DIR = debs
 
 TWEAK_NAME = FlagPaint
-FlagPaint_FILES = Tweak.xm HBFPColorArt.m
-#FlagPaint_FILES = Tweak.xm UIColor-Expanded.m HBFPColorArt.m
-FlagPaint_FRAMEWORKS = UIKit CoreGraphics
+FlagPaint_FILES = Tweak.xm $(wildcard *.m)
+FlagPaint_FRAMEWORKS = UIKit CoreGraphics QuartzCore
 
 include $(THEOS_MAKE_PATH)/tweak.mk
 

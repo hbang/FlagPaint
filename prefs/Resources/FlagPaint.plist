@@ -7,6 +7,9 @@
 		<dict>
 			<key>cell</key>
 			<string>PSGroupCell</string>
+			<key>footerText</key>
+			<string>The older banner style was previously used in FlagPaint 1.0 and only tints banners with a solid color.
+“Album Art Icon” shows the currently playing song’s album art for banners shown by tweaks such as NowListening. Requires the old style to be disabled.</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -26,13 +29,35 @@
 		</dict>
 		<dict>
 			<key>cell</key>
-			<string>PSLinkCell</string>
-			<key>detail</key>
-			<string>HBFPCustomTintsController</string>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>ws.hbang.flagpaint</string>
 			<key>icon</key>
-			<string>custom.png</string>
+			<string>music.png</string>
+			<key>key</key>
+			<string>AlbumArt</string>
 			<key>label</key>
-			<string>Custom Tints</string>
+			<string>Album Art Icon</string>
+			<key>PostNotification</key>
+			<string>ws.hbang.flagpaint/ReloadPrefs</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>ws.hbang.flagpaint</string>
+			<key>icon</key>
+			<string>oldstyle.png</string>
+			<key>key</key>
+			<string>OldStyle</string>
+			<key>label</key>
+			<string>Old Tint Style</string>
+			<key>PostNotification</key>
+			<string>ws.hbang.flagpaint/ReloadPrefs</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -80,7 +105,7 @@
 			<key>icon</key>
 			<string>center.png</string>
 			<key>key</key>
-			<string>Center</string>
+			<string>CenterText</string>
 			<key>label</key>
 			<string>Center Text</string>
 			<key>PostNotification</key>
@@ -117,27 +142,43 @@
 		<dict>
 			<key>cell</key>
 			<string>PSGroupCell</string>
-			<key>footerAlignment</key>
-			<integer>0</integer>
 			<key>footerText</key>
-			<string>Version 1.1 beta 1
-by HASHBANG Productions</string>
-			<key>label</key>
-			<string>FlagPaint</string>
+			<string>FlagPaint 1.1
+© 2012 — 2013, HASHBANG Productions</string>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSGroupCell</string>
 		</dict>
 		<dict>
-			<key>action</key>
-			<string>follow</string>
-			<key>cell</key>
-			<string>PSLinkCell</string>
-			<key>icon</key>
-			<string>twitter.png</string>
+			<key>cellClass</key>
+			<string>HBFPTwitterCell</string>
+			<key>height</key>
+			<integer>30</integer>
 			<key>label</key>
 			<string>Follow @hbangws on Twitter</string>
+			<key>user</key>
+			<string>hbangws</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>footerText</key>
+			<string>Banner style based on a concept by Sentry</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+		</dict>
+		<dict>
+			<key>cellClass</key>
+			<string>HBFPTwitterCell</string>
+			<key>height</key>
+			<integer>30</integer>
+			<key>label</key>
+			<string>Follow @A3tweaks on Twitter</string>
+			<key>user</key>
+			<string>A3tweaks</string>
 		</dict>
 	</array>
 	<key>title</key>
