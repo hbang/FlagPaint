@@ -1,59 +1,27 @@
-#import "HBFPBlurryLabel.h"
 #import <substrate.h> // >_>
+#import "HBFPBlurryLabel.h"
+#import <BulletinBoard/BBBulletin.h>
 #import <QuartzCore/QuartzCore.h>
-
-@interface BBBulletin : NSObject
--(NSString *)sectionID;
-@end
-
-@interface SBBulletinBannerController : NSObject
-+(id)sharedInstance;
--(void)showTestBanner;
-@end
-
-@interface SBBulletinBannerItem : NSObject
--(BBBulletin *)seedBulletin;
-@end
-
-@interface SBBannerView : UIView //5.x
-@end
-
-@interface SBBulletinBannerView : SBBannerView //6.x
-@end
-
-@interface SBApplication : NSObject
--(NSString *)bundleIdentifier;
-@end
-
-@interface SBApplicationController : NSObject
-+(id)sharedInstance;
--(SBApplication *)applicationWithDisplayIdentifier:(NSString *)displayIdentifier;
-@end
-
-@interface SBApplicationIcon : NSObject
--(id)initWithApplication:(SBApplication *)application;
--(UIImage *)getIconImage:(int)image;
-@end
-
-@interface SBMediaController : NSObject
-+(id)sharedInstance;
--(NSDictionary *)_nowPlayingInfo;
--(SBApplication *)nowPlayingApplication;
--(NSString *)nowPlayingTitle;
--(NSString *)nowPlayingArtist;
--(NSString *)nowPlayingAlbum;
-@end
-
-static NSDictionary *prefs;
-static NSMutableDictionary *cache = [[NSMutableDictionary alloc] init];
-static BOOL hasDietBulletin = NO;
-
-#define IS_IOS_6 kCFCoreFoundationVersionNumber >= 793
-#define GET_BOOL(key, default) ([prefs objectForKey:key] ? [[prefs objectForKey:key] boolValue] : default)
+#import <SpringBoard/SBBulletinBannerController.h>
+#import <SpringBoard/SBBulletinBannerItem.h>
+#import <SpringBoard/SBBannerView.h>
+#import <SpringBoard/SBBulletinBannerView.h>
+#import <SpringBoard/SBApplication.h>
+#import <SpringBoard/SBApplicationController.h>
+#import <SpringBoard/SBApplicationIcon.h>
+#import <SpringBoard/SBMediaController.h>
 
 struct pixel {
 	unsigned char r, g, b, a;
 };
+
+NSDictionary *prefs;
+NSMutableDictionary *cache = [[NSMutableDictionary alloc] init];
+BOOL hasDietBulletin = NO;
+
+#define GET_BOOL(key, default) ([prefs objectForKey:key] ? [[prefs objectForKey:key] boolValue] : default)
+
+#pragma mark - Get dominant color
 
 static UIColor* HBFPGetDominant(UIImage *image) {
 	NSUInteger red = 0, green = 0, blue = 0;
@@ -86,13 +54,15 @@ static UIColor* HBFPGetDominant(UIImage *image) {
 	return [UIColor colorWithRed:red / 255.0f green:green / 255.0f blue:blue / 255.0f alpha:1];
 }
 
+#pragma mark - Banner hooks
+
 static void HBFPBannerInit(SBBannerView *banner, SBBulletinBannerItem *item) {
 	HBFPBlurryLabel *titleLabel = MSHookIvar<HBFPBlurryLabel *>(banner, "_titleLabel");
 	HBFPBlurryLabel *messageLabel = MSHookIvar<HBFPBlurryLabel *>(banner, "_messageLabel");
 	UIImageView *iconView = MSHookIvar<UIImageView *>(banner, "_iconView");
 
 	if (GET_BOOL(@"Tint", YES)) {
-		UIImageView *bannerView = MSHookIvar<UIImageView *>(banner, IS_IOS_6 ? "_backgroundImageView" : "_bannerView");
+		UIImageView *bannerView = MSHookIvar<UIImageView *>(banner, IS_IOS_OR_NEWER(iOS_6_0) ? "_backgroundImageView" : "_bannerView");
 
 		BOOL isMusic = NO;
 
@@ -118,7 +88,7 @@ static void HBFPBannerInit(SBBannerView *banner, SBBulletinBannerItem *item) {
 				if (app) {
 					SBApplicationIcon *appIcon = [[%c(SBApplicationIcon) alloc] initWithApplication:app];
 					[app release];
-					UIImage *icon = [appIcon getIconImage:1];
+					UIImage *icon = [appIcon getIconImage:SBApplicationIconFormatDefault];
 
 					if (icon) {
 						[appIcon release];
@@ -230,7 +200,7 @@ static void HBFPBannerLayoutSubviews(SBBannerView *banner) {
 			titleFrame.size.width += oldX - titleFrame.origin.x;
 			titleLabel.frame = titleFrame;
 
-			if (IS_IOS_6) {
+			if (IS_IOS_OR_NEWER(iOS_6_0)) {
 				UIImageView *accessoryImageView = MSHookIvar<UIImageView *>(banner, "_accessoryImageView");
 
 				CGRect accessoryFrame = accessoryImageView.frame;
@@ -257,7 +227,7 @@ static void HBFPBannerLayoutSubviews(SBBannerView *banner) {
 	if (GET_BOOL(@"CenterText", YES)) {
 		UILabel *titleLabel = MSHookIvar<UILabel *>(banner, "_titleLabel");
 		UILabel *messageLabel = MSHookIvar<UILabel *>(banner, "_messageLabel");
-		UIImageView *accessoryImageView = IS_IOS_6 ? MSHookIvar<UIImageView *>(banner, "_accessoryImageView") : nil;
+		UIImageView *accessoryImageView = IS_IOS_OR_NEWER(iOS_6_0) ? MSHookIvar<UIImageView *>(banner, "_accessoryImageView") : nil;
 
 		if (hasDietBulletin) {
 			float titleWidth = titleLabel.hidden ? 0 : [titleLabel.text sizeWithFont:titleLabel.font].width;
@@ -347,6 +317,8 @@ static void HBFPBannerLayoutSubviews(SBBannerView *banner) {
 %end
 %end
 
+#pragma mark - Preferences management
+
 static void HBFPLoadPrefs() {
 	prefs = [[NSDictionary alloc] initWithContentsOfFile:@"/var/mobile/Library/Preferences/ws.hbang.flagpaint.plist"];
 }
@@ -355,10 +327,10 @@ static void HBFPShowTestBanner() {
 	[[%c(SBBulletinBannerController) sharedInstance] showTestBanner];
 }
 
-%ctor{
+%ctor {
 	%init;
 
-	if (IS_IOS_6) {
+	if (IS_IOS_OR_NEWER(iOS_6_0)) {
 		%init(HBFPiOS6);
 	} else {
 		%init(HBFPiOS5);
