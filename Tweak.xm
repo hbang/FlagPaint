@@ -317,6 +317,26 @@ static void HBFPBannerLayoutSubviews(SBBannerView *banner) {
 %end
 %end
 
+#pragma mark - DietBulletin hooks
+
+%group HBFPDietBulletin
+BOOL overrideUILabel = NO;
+
+%hook DietBulletinMarqueeLabel
+- (void)_startMarquee {
+	overrideUILabel = YES;
+	%orig;
+	overrideUILabel = NO;
+}
+%end
+
+%hook UILabel
++ (Class)class {
+	return overrideUILabel ? HBFPBlurryLabel.class : %orig;
+}
+%end
+%end
+
 #pragma mark - Preferences management
 
 static void HBFPLoadPrefs() {
@@ -339,5 +359,14 @@ static void HBFPShowTestBanner() {
 	HBFPLoadPrefs();
 	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)HBFPLoadPrefs, CFSTR("ws.hbang.flagpaint/ReloadPrefs"), NULL, 0);
 	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)HBFPShowTestBanner, CFSTR("ws.hbang.flagpaint/TestBanner"), NULL, 0);
+
 	hasDietBulletin = [[NSFileManager defaultManager] fileExistsAtPath:@"/Library/MobileSubstrate/DynamicLibraries/DietBulletin.dylib"];
+
+	if (hasDietBulletin) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+		class_setSuperclass(%c(DietBulletinMarqueeLabel), HBFPBlurryLabel.class);
+#pragma clang diagnostic pop
+		%init(HBFPDietBulletin);
+	}
 }
