@@ -15,6 +15,9 @@ struct pixel {
 	unsigned char r, g, b, a;
 };
 
+static const char *BackgroundGradientIdentifier = "flagPaint_backgroundGradient";
+static const char *HasLaidOutSubviewsIdentifier = "flagPaint_hasLaidOutSubviews";
+
 NSDictionary *prefs;
 NSMutableDictionary *cache = [[NSMutableDictionary alloc] init];
 BOOL hasDietBulletin = NO;
@@ -56,143 +59,158 @@ static UIColor *HBFPGetDominant(UIImage *image) {
 
 #pragma mark - Banner hooks
 
-static void HBFPBannerInit(SBBannerView *banner, SBBulletinBannerItem *item) {
-	HBFPBlurryLabel *titleLabel = MSHookIvar<HBFPBlurryLabel *>(banner, "_titleLabel");
-	HBFPBlurryLabel *messageLabel = MSHookIvar<HBFPBlurryLabel *>(banner, "_messageLabel");
-	UIImageView *iconView = MSHookIvar<UIImageView *>(banner, "_iconView");
+%hook SBBannerView
+- (id)initWithItem:(SBBulletinBannerItem *)item {
+	self = %orig;
 
-	if (GET_BOOL(@"Tint", YES)) {
-		UIImageView *bannerView = MSHookIvar<UIImageView *>(banner, IS_IOS_OR_NEWER(iOS_6_0) ? "_backgroundImageView" : "_bannerView");
+	if (self) {
+		HBFPBlurryLabel *titleLabel = MSHookIvar<HBFPBlurryLabel *>(self, "_titleLabel");
+		HBFPBlurryLabel *messageLabel = MSHookIvar<HBFPBlurryLabel *>(self, "_messageLabel");
+		UIImageView *iconView = MSHookIvar<UIImageView *>(self, "_iconView");
 
-		BOOL isMusic = NO;
+		if (GET_BOOL(@"Tint", YES)) {
+			UIImageView *bannerView = MSHookIvar<UIImageView *>(self, IS_IOS_OR_NEWER(iOS_6_0) ? "_backgroundImageView" : "_bannerView");
 
-		if (!GET_BOOL(@"OldStyle", NO)) {
-			isMusic = GET_BOOL(@"AlbumArt", YES) && [[%c(SBMediaController) sharedInstance] nowPlayingApplication] && [[%c(SBMediaController) sharedInstance] nowPlayingApplication].class == %c(SBApplication) && [item.seedBulletin.sectionID isEqualToString:[[[%c(SBMediaController) sharedInstance] nowPlayingApplication] bundleIdentifier]] && [[[%c(SBMediaController) sharedInstance] _nowPlayingInfo] objectForKey:@"artworkData"];
+			BOOL isMusic = NO;
 
-			CAGradientLayer *imageGradientLayer = [CAGradientLayer layer];
-			imageGradientLayer.colors = @[(id)[UIColor whiteColor].CGColor, (id)[UIColor clearColor].CGColor];
-			imageGradientLayer.startPoint = CGPointMake(0.5f, 0.5f);
-			imageGradientLayer.endPoint = CGPointMake(1.f, 0.5f);
-			iconView.layer.mask = imageGradientLayer;
+			if (!GET_BOOL(@"OldStyle", NO)) {
+				isMusic = GET_BOOL(@"AlbumArt", YES) && [[%c(SBMediaController) sharedInstance] nowPlayingApplication] && [[%c(SBMediaController) sharedInstance] nowPlayingApplication].class == %c(SBApplication) && [item.seedBulletin.sectionID isEqualToString:[[[%c(SBMediaController) sharedInstance] nowPlayingApplication] bundleIdentifier]] && [[[%c(SBMediaController) sharedInstance] _nowPlayingInfo] objectForKey:@"artworkData"];
 
-			NSString *key = [@"FPICON_" stringByAppendingString:isMusic ? [NSString stringWithFormat:@"FPMUSIC_%@%@%@%@", [[[%c(SBMediaController) sharedInstance] nowPlayingApplication] bundleIdentifier], [[%c(SBMediaController) sharedInstance] nowPlayingTitle], [[%c(SBMediaController) sharedInstance] nowPlayingArtist], [[%c(SBMediaController) sharedInstance] nowPlayingAlbum]] : item.seedBulletin.sectionID];
+				CAGradientLayer *imageGradientLayer = [CAGradientLayer layer];
+				imageGradientLayer.colors = @[(id)[UIColor whiteColor].CGColor, (id)[UIColor clearColor].CGColor];
+				imageGradientLayer.startPoint = CGPointMake(0.5f, 0.5f);
+				imageGradientLayer.endPoint = CGPointMake(1.f, 0.5f);
+				iconView.layer.mask = imageGradientLayer;
 
-			if ([cache objectForKey:key]) {
-				iconView.image = [cache objectForKey:key];
-			} else if (isMusic) {
-				iconView.image = [UIImage imageWithData:[[[%c(SBMediaController) sharedInstance] _nowPlayingInfo] objectForKey:@"artworkData"]];
-				[cache setObject:[iconView.image retain] forKey:key];
-			} else {
-				SBApplication *app = [[%c(SBApplicationController) sharedInstance] applicationWithDisplayIdentifier:item.seedBulletin.sectionID];
+				NSString *key = [@"FPICON_" stringByAppendingString:isMusic ? [NSString stringWithFormat:@"FPMUSIC_%@%@%@%@", [[[%c(SBMediaController) sharedInstance] nowPlayingApplication] bundleIdentifier], [[%c(SBMediaController) sharedInstance] nowPlayingTitle], [[%c(SBMediaController) sharedInstance] nowPlayingArtist], [[%c(SBMediaController) sharedInstance] nowPlayingAlbum]] : item.seedBulletin.sectionID];
 
-				if (app) {
-					SBApplicationIcon *appIcon = [[%c(SBApplicationIcon) alloc] initWithApplication:app];
-					[app release];
-					UIImage *icon = [appIcon getIconImage:SBApplicationIconFormatDefault];
+				if ([cache objectForKey:key]) {
+					iconView.image = [cache objectForKey:key];
+				} else if (isMusic) {
+					iconView.image = [UIImage imageWithData:[[[%c(SBMediaController) sharedInstance] _nowPlayingInfo] objectForKey:@"artworkData"]];
+					[cache setObject:[iconView.image retain] forKey:key];
+				} else {
+					SBApplication *app = [[%c(SBApplicationController) sharedInstance] applicationWithDisplayIdentifier:item.seedBulletin.sectionID];
 
-					if (icon) {
-						[appIcon release];
+					if (app) {
+						SBApplicationIcon *appIcon = [[%c(SBApplicationIcon) alloc] initWithApplication:app];
+						[app release];
+						UIImage *icon = [appIcon getIconImage:SBApplicationIconFormatDefault];
 
-						iconView.image = icon;
-						[cache setObject:[icon retain] forKey:key];
+						if (icon) {
+							[appIcon release];
+
+							iconView.image = icon;
+							[cache setObject:[icon retain] forKey:key];
+						}
 					}
 				}
 			}
-		}
 
-		iconView.layer.cornerRadius = 5.f;
+			iconView.layer.cornerRadius = 5.f;
 
-		UIColor *tint = [UIColor whiteColor];
+			UIColor *tint = [UIColor whiteColor];
 
-		/*NSArray *colors = [prefs objectForKey:[NSString stringWithFormat:@"Tint-%@", item.seedBulletin.sectionID]];
+			/*NSArray *colors = [prefs objectForKey:[NSString stringWithFormat:@"Tint-%@", item.seedBulletin.sectionID]];
 
-		if (colors && colors.count == 3) {
-			tint = [UIColor colorWithRed:[[colors objectAtIndex:0] floatValue] green:[[colors objectAtIndex:1] floatValue] blue:[[colors objectAtIndex:2] floatValue] alpha:1];
-		} else {*/
-			NSString *key = isMusic ? [NSString stringWithFormat:@"FPMUSIC_%@%@%@%@", [[[%c(SBMediaController) sharedInstance] nowPlayingApplication] bundleIdentifier], [[%c(SBMediaController) sharedInstance] nowPlayingTitle], [[%c(SBMediaController) sharedInstance] nowPlayingArtist], [[%c(SBMediaController) sharedInstance] nowPlayingAlbum]] : item.seedBulletin.sectionID;
+			if (colors && colors.count == 3) {
+				tint = [UIColor colorWithRed:[[colors objectAtIndex:0] floatValue] green:[[colors objectAtIndex:1] floatValue] blue:[[colors objectAtIndex:2] floatValue] alpha:1];
+			} else {*/
+				NSString *key = isMusic ? [NSString stringWithFormat:@"FPMUSIC_%@%@%@%@", [[[%c(SBMediaController) sharedInstance] nowPlayingApplication] bundleIdentifier], [[%c(SBMediaController) sharedInstance] nowPlayingTitle], [[%c(SBMediaController) sharedInstance] nowPlayingArtist], [[%c(SBMediaController) sharedInstance] nowPlayingAlbum]] : item.seedBulletin.sectionID;
 
-			if ([cache objectForKey:key]) {
-				tint = [cache objectForKey:key];
+				if ([cache objectForKey:key]) {
+					tint = [cache objectForKey:key];
+				} else {
+					tint = HBFPGetDominant(iconView.image) ?: [UIColor whiteColor];
+
+					[cache setObject:[tint retain] forKey:key];
+				}
+			//}
+
+			bannerView.image = nil;
+
+			if (GET_BOOL(@"BorderRadius", YES)) {
+				bannerView.layer.cornerRadius = 5.f;
+				((SBBannerView *)self).layer.cornerRadius = 5.f;
+			}
+
+			if (!GET_BOOL(@"OldStyle", NO)) {
+				float hue, saturation, brightness, alpha;
+
+				if ([tint getHue:&hue saturation:&saturation brightness:&brightness alpha:&alpha]) {
+					bannerView.layer.borderColor = [UIColor colorWithHue:hue saturation:saturation brightness:MIN(1, brightness * 1.08f) alpha:0.9f].CGColor;
+					bannerView.layer.borderWidth = 1.f;
+
+					UIView *gradientView = [[UIView alloc] initWithFrame:((SBBannerView *)self).frame];
+					gradientView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+
+					if (GET_BOOL(@"BorderRadius", YES)) {
+						gradientView.layer.cornerRadius = 5.f;
+					}
+
+					CAGradientLayer *gradientLayer = [CAGradientLayer layer];
+					gradientLayer.locations = @[@0, @1];
+					gradientLayer.colors = @[(id)[UIColor colorWithHue:hue saturation:saturation brightness:MIN(1, brightness * 2.f) alpha:alpha].CGColor, (id)tint.CGColor];
+					gradientLayer.cornerRadius = 5.f;
+					[gradientView.layer addSublayer:gradientLayer];
+
+					objc_setAssociatedObject(self, BackgroundGradientIdentifier, [gradientLayer retain], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+
+					[bannerView addSubview:gradientView];
+				}
+
+				object_setClass(titleLabel, HBFPBlurryLabel.class);
+				object_setClass(messageLabel, HBFPBlurryLabel.class);
 			} else {
-				tint = HBFPGetDominant(iconView.image) ?: [UIColor whiteColor];
-
-				[cache setObject:[tint retain] forKey:key];
-			}
-		//}
-
-		bannerView.image = nil;
-		bannerView.layer.cornerRadius = 5.f;
-		banner.layer.cornerRadius = 5.f;
-
-		if (!GET_BOOL(@"OldStyle", NO)) {
-			float hue, saturation, brightness, alpha;
-
-			if ([tint getHue:&hue saturation:&saturation brightness:&brightness alpha:&alpha]) {
-				bannerView.layer.borderColor = [UIColor colorWithHue:hue saturation:saturation brightness:MIN(1, brightness * 1.08f) alpha:0.9f].CGColor;
-				bannerView.layer.borderWidth = 1.f;
-
-				UIView *gradientView = [[UIView alloc] initWithFrame:banner.frame];
-				gradientView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-				gradientView.layer.cornerRadius = 5.f;
-
-				CAGradientLayer *gradientLayer = [CAGradientLayer layer];
-				gradientLayer.locations = @[@0, @1];
-				gradientLayer.colors = @[(id)[UIColor colorWithHue:hue saturation:saturation brightness:MIN(1, brightness * 2.f) alpha:alpha].CGColor, (id)tint.CGColor];
-				gradientLayer.cornerRadius = 5.f;
-				[gradientView.layer addSublayer:gradientLayer];
-
-				objc_setAssociatedObject(banner, "flagPaint_backgroundGradient", [gradientLayer retain], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-
-				[bannerView addSubview:gradientView];
+				bannerView.backgroundColor = tint;
 			}
 
-			object_setClass(titleLabel, HBFPBlurryLabel.class);
-			object_setClass(messageLabel, HBFPBlurryLabel.class);
-		} else {
-			bannerView.backgroundColor = tint;
+			titleLabel.textColor = [UIColor whiteColor];
+			messageLabel.textColor = [UIColor whiteColor];
 		}
 
-		titleLabel.textColor = [UIColor whiteColor];
-		messageLabel.textColor = [UIColor whiteColor];
+		if (GET_BOOL(@"CenterText", YES) && !hasDietBulletin) {
+			titleLabel.textAlignment = UITextAlignmentCenter;
+			messageLabel.textAlignment = UITextAlignmentCenter;
+		}
+
+		if (GET_BOOL(@"Semitransparent", YES)) {
+			UIView *underlayView = MSHookIvar<UIView *>(self, "_underlayView");
+			underlayView.backgroundColor = [UIColor clearColor];
+		}
+
+		if (GET_BOOL(@"Fade", YES)) {
+			((SBBannerView *)self).alpha = 0.f;
+		} else if (GET_BOOL(@"Semitransparent", YES)) {
+			((SBBannerView *)self).alpha = 0.9f;
+		}
 	}
 
-	if (GET_BOOL(@"CenterText", YES) && !hasDietBulletin) {
-		titleLabel.textAlignment = UITextAlignmentCenter;
-		messageLabel.textAlignment = UITextAlignmentCenter;
-	}
-
-	if (GET_BOOL(@"Semitransparent", YES)) {
-		UIView *underlayView = MSHookIvar<UIView *>(banner, "_underlayView");
-		underlayView.backgroundColor = [UIColor clearColor];
-	}
-
-	if (GET_BOOL(@"Fade", YES)) {
-		banner.alpha = 0.f;
-	} else if (GET_BOOL(@"Semitransparent", YES)) {
-		banner.alpha = 0.9f;
-	}
+	return self;
 }
 
-static void HBFPBannerLayoutSubviews(SBBannerView *banner) {
-	CAGradientLayer *gradientLayer = objc_getAssociatedObject(banner, "flagPaint_backgroundGradient");
+- (void)layoutSubviews {
+	%orig;
+
+	CAGradientLayer *gradientLayer = objc_getAssociatedObject(self, BackgroundGradientIdentifier);
 
 	if (gradientLayer) {
-		gradientLayer.frame = CGRectMake(0, 0, banner.frame.size.width, banner.frame.size.height);
+		gradientLayer.frame = CGRectMake(0, 0, ((SBBannerView *)self).frame.size.width, ((SBBannerView *)self).frame.size.height);
 	}
 
-	if (![objc_getAssociatedObject(banner, "flagPaint_hasLaidOutSubviews") boolValue]) {
-		objc_setAssociatedObject(banner, "flagPaint_hasLaidOutSubviews", [NSNumber numberWithBool:YES], OBJC_ASSOCIATION_ASSIGN);
+	if (![objc_getAssociatedObject(self, HasLaidOutSubviewsIdentifier) boolValue]) {
+		objc_setAssociatedObject(self, HasLaidOutSubviewsIdentifier, [NSNumber numberWithBool:YES], OBJC_ASSOCIATION_ASSIGN);
 
 		if (GET_BOOL(@"Fade", YES)) {
 			[UIView animateWithDuration:0.85f animations:^{
-				banner.alpha = GET_BOOL(@"Semitransparent", YES) ? 0.9f : 1.f;
+				((SBBannerView *)self).alpha = GET_BOOL(@"Semitransparent", YES) ? 0.9f : 1.f;
 			}];
 		}
 
 		if (GET_BOOL(@"RemoveIcon", NO)) {
-			UILabel *titleLabel = MSHookIvar<UILabel *>(banner, "_titleLabel");
-			UILabel *messageLabel = MSHookIvar<UILabel *>(banner, "_messageLabel");
-			UIImageView *iconView = MSHookIvar<UIImageView *>(banner, "_iconView");
+			UILabel *titleLabel = MSHookIvar<UILabel *>(self, "_titleLabel");
+			UILabel *messageLabel = MSHookIvar<UILabel *>(self, "_messageLabel");
+			UIImageView *iconView = MSHookIvar<UIImageView *>(self, "_iconView");
 
 			CGRect titleFrame = titleLabel.frame;
 			float oldX = titleFrame.origin.x;
@@ -201,7 +219,7 @@ static void HBFPBannerLayoutSubviews(SBBannerView *banner) {
 			titleLabel.frame = titleFrame;
 
 			if (IS_IOS_OR_NEWER(iOS_6_0)) {
-				UIImageView *accessoryImageView = MSHookIvar<UIImageView *>(banner, "_accessoryImageView");
+				UIImageView *accessoryImageView = MSHookIvar<UIImageView *>(self, "_accessoryImageView");
 
 				CGRect accessoryFrame = accessoryImageView.frame;
 				accessoryFrame.origin.x -= oldX - iconView.frame.origin.x;
@@ -225,15 +243,15 @@ static void HBFPBannerLayoutSubviews(SBBannerView *banner) {
 	}
 
 	if (GET_BOOL(@"CenterText", YES)) {
-		UILabel *titleLabel = MSHookIvar<UILabel *>(banner, "_titleLabel");
-		UILabel *messageLabel = MSHookIvar<UILabel *>(banner, "_messageLabel");
-		UIImageView *accessoryImageView = IS_IOS_OR_NEWER(iOS_6_0) ? MSHookIvar<UIImageView *>(banner, "_accessoryImageView") : nil;
+		UILabel *titleLabel = MSHookIvar<UILabel *>(self, "_titleLabel");
+		UILabel *messageLabel = MSHookIvar<UILabel *>(self, "_messageLabel");
+		UIImageView *accessoryImageView = IS_IOS_OR_NEWER(iOS_6_0) ? MSHookIvar<UIImageView *>(self, "_accessoryImageView") : nil;
 
 		if (hasDietBulletin) {
 			float titleWidth = titleLabel.hidden ? 0 : [titleLabel.text sizeWithFont:titleLabel.font].width;
 			float messageWidth = [messageLabel.text sizeWithFont:messageLabel.font].width;
 
-			if (titleWidth + 6.f + messageWidth < banner.frame.size.width - 16.f) {
+			if (titleWidth + 6.f + messageWidth < ((SBBannerView *)self).frame.size.width - 16.f) {
 				UIView *containerView = [[UIView alloc] init];
 				containerView.tag = 1337;
 
@@ -241,7 +259,7 @@ static void HBFPBannerLayoutSubviews(SBBannerView *banner) {
 				[containerView addSubview:titleLabel];
 				[messageLabel removeFromSuperview];
 				[containerView addSubview:messageLabel];
-				[banner addSubview:containerView];
+				[((SBBannerView *)self) addSubview:containerView];
 
 				CGRect titleFrame = titleLabel.frame;
 				titleFrame.origin.x = 0;
@@ -253,8 +271,8 @@ static void HBFPBannerLayoutSubviews(SBBannerView *banner) {
 				messageFrame.size.width = messageWidth;
 				messageLabel.frame = messageFrame;
 
-				containerView.frame = CGRectMake(0, 0, titleWidth + 6.f + messageWidth, banner.frame.size.height);
-				containerView.center = CGPointMake(banner.frame.size.width / 2, containerView.center.y);
+				containerView.frame = CGRectMake(0, 0, titleWidth + 6.f + messageWidth, ((SBBannerView *)self).frame.size.height);
+				containerView.center = CGPointMake(((SBBannerView *)self).frame.size.width / 2, containerView.center.y);
 
 				[containerView release];
 			}
@@ -270,51 +288,12 @@ static void HBFPBannerLayoutSubviews(SBBannerView *banner) {
 	}
 
 	if (GET_BOOL(@"Tint", YES) && !GET_BOOL(@"OldStyle", NO) && !GET_BOOL(@"RemoveIcon", NO)) {
-		UIImageView *iconView = MSHookIvar<UIImageView *>(banner, "_iconView");
+		UIImageView *iconView = MSHookIvar<UIImageView *>(self, "_iconView");
 
-		iconView.frame = CGRectMake(-1.f, -1.f, banner.frame.size.height + 2.f, banner.frame.size.height + 2.f);
+		iconView.frame = CGRectMake(-1.f, -1.f, ((SBBannerView *)self).frame.size.height + 2.f, ((SBBannerView *)self).frame.size.height + 2.f);
 		iconView.layer.mask.frame = iconView.frame;
 	}
 }
-
-%group HBFPiOS5
-%hook SBBannerView
--(id)initWithItem:(SBBulletinBannerItem *)item {
-	self = %orig;
-
-	if (self) {
-		HBFPBannerInit(self, item);
-	}
-
-	return self;
-}
-
--(void)layoutSubviews {
-	%orig;
-
-	HBFPBannerLayoutSubviews(self);
-}
-%end
-%end
-
-%group HBFPiOS6
-%hook SBBulletinBannerView
--(id)initWithItem:(SBBulletinBannerItem *)item {
-	self = %orig;
-
-	if (self) {
-		HBFPBannerInit((SBBannerView *)self, item);
-	}
-
-	return self;
-}
-
--(void)layoutSubviews {
-	%orig;
-
-	HBFPBannerLayoutSubviews((SBBannerView *)self);
-}
-%end
 %end
 
 #pragma mark - DietBulletin hooks
@@ -339,22 +318,16 @@ BOOL overrideUILabel = NO;
 
 #pragma mark - Preferences management
 
-static void HBFPLoadPrefs() {
+void HBFPLoadPrefs() {
 	prefs = [[NSDictionary alloc] initWithContentsOfFile:@"/var/mobile/Library/Preferences/ws.hbang.flagpaint.plist"];
 }
 
-static void HBFPShowTestBanner() {
+void HBFPShowTestBanner() {
 	[[%c(SBBulletinBannerController) sharedInstance] showTestBanner];
 }
 
 %ctor {
-	%init;
-
-	if (IS_IOS_OR_NEWER(iOS_6_0)) {
-		%init(HBFPiOS6);
-	} else {
-		%init(HBFPiOS5);
-	}
+	%init(SBBannerView = objc_getClass("SBBulletinBannerView") ?: objc_getClass("SBBannerView"));
 
 	HBFPLoadPrefs();
 	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)HBFPLoadPrefs, CFSTR("ws.hbang.flagpaint/ReloadPrefs"), NULL, 0);
@@ -368,5 +341,7 @@ static void HBFPShowTestBanner() {
 		class_setSuperclass(%c(DietBulletinMarqueeLabel), HBFPBlurryLabel.class);
 #pragma clang diagnostic pop
 		%init(HBFPDietBulletin);
+
+		// TODO: listen for dietbulletin's prefs reload notification and grab its banner size setting
 	}
 }
