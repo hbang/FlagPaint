@@ -1,10 +1,10 @@
 #import <substrate.h> // >_>
+#import <version.h>
 #import "HBFPBlurryLabel.h"
 #import <BulletinBoard/BBBulletin.h>
 #import <QuartzCore/QuartzCore.h>
 #import <SpringBoard/SBBulletinBannerController.h>
 #import <SpringBoard/SBBulletinBannerItem.h>
-#import <SpringBoard/SBBannerView.h>
 #import <SpringBoard/SBBulletinBannerView.h>
 #import <SpringBoard/SBApplication.h>
 #import <SpringBoard/SBApplicationController.h>
@@ -23,15 +23,15 @@ BOOL hasDietBulletin = NO;
 
 #pragma mark - Get dominant color
 
-static UIColor* HBFPGetDominant(UIImage *image) {
-	NSUInteger red = 0, green = 0, blue = 0;
+static UIColor *HBFPGetDominant(UIImage *image) {
+	unsigned red = 0, green = 0, blue = 0;
 
-	struct pixel *pixels = (struct pixel *) calloc(1, image.size.width * image.size.height * sizeof(struct pixel));
+	struct pixel *pixels = (struct pixel *)calloc(1, image.size.width * image.size.height * sizeof(struct pixel));
 
-	if (pixels != nil) {
-		CGContextRef context = CGBitmapContextCreate((void *) pixels, image.size.width, image.size.height, 8, image.size.width * 4, CGImageGetColorSpace(image.CGImage), kCGImageAlphaPremultipliedLast);
+	if (pixels) {
+		CGContextRef context = CGBitmapContextCreate((void *)pixels, image.size.width, image.size.height, 8.f, image.size.width * 4.f, CGImageGetColorSpace(image.CGImage), kCGImageAlphaPremultipliedLast);
 
-		if (context != NULL) {
+		if (context) {
 			CGContextDrawImage(context, CGRectMake(0, 0, image.size.width, image.size.height), image.CGImage);
 
 			NSUInteger numberOfPixels = image.size.width * image.size.height;
