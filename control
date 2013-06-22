@@ -3,9 +3,9 @@ Name: FlagPaint
 Depends: mobilesubstrate, preferenceloader
 Conflicts: ws.hbang.flagpaint
 Replaces: ws.hbang.flagpaint
-Version: 1.1.1
+Version: 1.1.2~beta
 Architecture: iphoneos-arm
 Description: Tint banners based on icon color
-Maintainer: HASHBANG & A3Tweaks <flagpaint@hbang.ws>
-Author: HASHBANG & A3Tweaks <flagpaint@hbang.ws>
+Maintainer: HASHBANG & A3tweaks <flagpaint@hbang.ws>
+Author: HASHBANG & A3tweaks <flagpaint@hbang.ws>
 Section: Tweaks
