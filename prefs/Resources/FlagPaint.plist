@@ -8,8 +8,7 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>footerText</key>
-			<string>The older banner style was previously used in FlagPaint 1.0 and only tints banners with a solid color.
-“Album Art Icon” shows the currently playing song’s album art for banners shown by tweaks such as NowListening. Requires the old style to be disabled.</string>
+			<string>“Album Art Icon” shows the currently playing song’s album art for banners shown by tweaks such as NowListening. Requires enlarged icons to be enabled below.</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -18,8 +17,6 @@
 			<true/>
 			<key>defaults</key>
 			<string>ws.hbang.flagpaint</string>
-			<key>icon</key>
-			<string>tint.png</string>
 			<key>key</key>
 			<string>Tint</string>
 			<key>label</key>
@@ -34,8 +31,6 @@
 			<true/>
 			<key>defaults</key>
 			<string>ws.hbang.flagpaint</string>
-			<key>icon</key>
-			<string>music.png</string>
 			<key>key</key>
 			<string>AlbumArt</string>
 			<key>label</key>
@@ -45,23 +40,25 @@
 		</dict>
 		<dict>
 			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>footerText</key>
+			<string>The flat banner style was previously used in FlagPaint 1.0.</string>
+			<key>label</key>
+			<string>Style</string>
+		</dict>
+		<dict>
+			<key>cell</key>
 			<string>PSSwitchCell</string>
 			<key>default</key>
 			<false/>
 			<key>defaults</key>
 			<string>ws.hbang.flagpaint</string>
-			<key>icon</key>
-			<string>oldstyle.png</string>
 			<key>key</key>
 			<string>OldStyle</string>
 			<key>label</key>
-			<string>Old Tint Style</string>
+			<string>Flat Style</string>
 			<key>PostNotification</key>
 			<string>ws.hbang.flagpaint/ReloadPrefs</string>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSGroupCell</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -70,8 +67,40 @@
 			<true/>
 			<key>defaults</key>
 			<string>ws.hbang.flagpaint</string>
-			<key>icon</key>
-			<string>semitransparent.png</string>
+			<key>key</key>
+			<string>BorderRadius</string>
+			<key>label</key>
+			<string>Round Borders</string>
+			<key>PostNotification</key>
+			<string>ws.hbang.flagpaint/ReloadPrefs</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>ws.hbang.flagpaint</string>
+			<key>key</key>
+			<string>BigIcon</string>
+			<key>label</key>
+			<string>Enlarge Icon</string>
+			<key>PostNotification</key>
+			<string>ws.hbang.flagpaint/ReloadPrefs</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Extras</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>ws.hbang.flagpaint</string>
 			<key>key</key>
 			<string>Semitransparent</string>
 			<key>label</key>
@@ -86,8 +115,6 @@
 			<false/>
 			<key>defaults</key>
 			<string>ws.hbang.flagpaint</string>
-			<key>icon</key>
-			<string>noicon.png</string>
 			<key>key</key>
 			<string>RemoveIcon</string>
 			<key>label</key>
@@ -99,11 +126,9 @@
 			<key>cell</key>
 			<string>PSSwitchCell</string>
 			<key>default</key>
-			<true/>
+			<false/>
 			<key>defaults</key>
 			<string>ws.hbang.flagpaint</string>
-			<key>icon</key>
-			<string>center.png</string>
 			<key>key</key>
 			<string>CenterText</string>
 			<key>label</key>
@@ -115,11 +140,9 @@
 			<key>cell</key>
 			<string>PSSwitchCell</string>
 			<key>default</key>
-			<true/>
+			<false/>
 			<key>defaults</key>
 			<string>ws.hbang.flagpaint</string>
-			<key>icon</key>
-			<string>animate.png</string>
 			<key>key</key>
 			<string>Fade</string>
 			<key>label</key>
