@@ -1,4 +1,4 @@
-TARGET = iphone:clang::5.0
+TARGET = :clang::5.0
 
 include theos/makefiles/common.mk
 
@@ -12,3 +12,8 @@ include $(THEOS_MAKE_PATH)/tweak.mk
 
 SUBPROJECTS += prefs
 include $(THEOS_MAKE_PATH)/aggregate.mk
+
+after-install::
+ifeq ($(RESPRING),0)
+	install.exec "killall Preferences; sleep 0.2; sbopenurl prefs:root=FlagPaint"
+endif
