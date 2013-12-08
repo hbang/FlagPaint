@@ -7,6 +7,7 @@ THEOS_BUILD_DIR = debs
 TWEAK_NAME = FlagPaint
 FlagPaint_FILES = Tweak.xm $(wildcard *.m)
 FlagPaint_FRAMEWORKS = UIKit CoreGraphics QuartzCore Accelerate
+FlagPaint_LDFLAGS = -fobjc-arc
 
 include $(THEOS_MAKE_PATH)/tweak.mk
 

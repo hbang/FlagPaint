@@ -364,8 +364,6 @@ NSString *HBFPGetKey(NSString *sectionID, BOOL isMusic) {
 
 				containerView.frame = CGRectMake(0, 0, titleWidth + 6.f + messageWidth, ((SBBannerView *)self).frame.size.height);
 				containerView.center = CGPointMake(((SBBannerView *)self).frame.size.width / 2, containerView.center.y);
-
-				[containerView release];
 			}
 		} else if (accessoryImageView) {
 			CGRect titleFrame = titleLabel.frame;
