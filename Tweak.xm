@@ -32,35 +32,42 @@ BOOL removeIcon = NO;
 BOOL centerText = NO;
 BOOL fadeIn = NO;
 
+static NSUInteger BytesPerPixel = 4;
+static NSUInteger BitsPerComponent = 8;
+
 #pragma mark - Get dominant color
 
-static UIColor *HBFPGetDominantColor(UIImage *image) {
+UIColor *HBFPGetDominantColor(UIImage *image) {
 	NSUInteger red = 0, green = 0, blue = 0;
+	NSUInteger numberOfPixels = image.size.width * image.size.height;
 
 	pixel *pixels = (pixel *)calloc(1, image.size.width * image.size.height * sizeof(pixel));
 
-	if (pixels) {
-		CGContextRef context = CGBitmapContextCreate((void *)pixels, image.size.width, image.size.height, 8.f, image.size.width * 4.f, CGImageGetColorSpace(image.CGImage), kCGImageAlphaPremultipliedLast);
-
-		if (context) {
-			CGContextDrawImage(context, CGRectMake(0, 0, image.size.width, image.size.height), image.CGImage);
-
-			NSUInteger numberOfPixels = image.size.width * image.size.height;
-			for (NSUInteger i = 0; i < numberOfPixels; i++) {
-				red += pixels[i].r;
-				green += pixels[i].g;
-				blue += pixels[i].b;
-			}
-
-			red /= numberOfPixels;
-			green /= numberOfPixels;
-			blue /= numberOfPixels;
-
-			CGContextRelease(context);
-		}
-
-		free(pixels);
+	if (!pixels) {
+		return [UIColor whiteColor];
 	}
+
+	CGContextRef context = CGBitmapContextCreate(pixels, image.size.width, image.size.height, BitsPerComponent, image.size.width * BytesPerPixel, CGImageGetColorSpace(image.CGImage), kCGImageAlphaPremultipliedLast);
+
+	if (!context) {
+		free(pixels);
+		return [UIColor whiteColor];
+	}
+
+	CGContextDrawImage(context, CGRectMake(0, 0, image.size.width, image.size.height), image.CGImage);
+
+	for (NSUInteger i = 0; i < numberOfPixels; i++) {
+		red += pixels[i].r;
+		green += pixels[i].g;
+		blue += pixels[i].b;
+	}
+
+	red /= numberOfPixels;
+	green /= numberOfPixels;
+	blue /= numberOfPixels;
+
+	CGContextRelease(context);
+	free(pixels);
 
 	return [UIColor colorWithRed:red / 255.f green:green / 255.f blue:blue / 255.f alpha:1];
 }
@@ -77,9 +84,11 @@ static UIColor *HBFPGetDominantColor(UIImage *image) {
 		HBFPBlurryLabel *messageLabel = MSHookIvar<HBFPBlurryLabel *>(self, "_messageLabel");
 		UIImageView *iconView = MSHookIvar<UIImageView *>(self, "_iconView");
 
+		SBMediaController *mediaController = [%c(SBMediaController) sharedInstance];
+
 		if (shouldTint) {
 			UIImageView *bannerView = MSHookIvar<UIImageView *>(self, IS_IOS_OR_NEWER(iOS_6_0) ? "_backgroundImageView" : "_bannerView");
-			BOOL isMusic = !oldStyle && albumArt && [[%c(SBMediaController) sharedInstance] nowPlayingApplication] && [[%c(SBMediaController) sharedInstance] nowPlayingApplication].class == %c(SBApplication) && [item.seedBulletin.sectionID isEqualToString:[[[%c(SBMediaController) sharedInstance] nowPlayingApplication] bundleIdentifier]] && [[[%c(SBMediaController) sharedInstance] _nowPlayingInfo] objectForKey:@"artworkData"];
+			BOOL isMusic = !oldStyle && albumArt && mediaController.nowPlayingApplication && mediaController.nowPlayingApplication.class == %c(SBApplication) && [item.seedBulletin.sectionID isEqualToString:mediaController.nowPlayingApplication.bundleIdentifier] && mediaController._nowPlayingInfo[@"artworkData"];
 
 			if (bigIcon) {
 				CAGradientLayer *imageGradientLayer = [CAGradientLayer layer];
@@ -90,43 +99,40 @@ static UIColor *HBFPGetDominantColor(UIImage *image) {
 			}
 
 			if (!oldStyle) {
-				NSString *key = [@"FPICON_" stringByAppendingString:isMusic ? [NSString stringWithFormat:@"FPMUSIC_%@%@%@%@", [[[%c(SBMediaController) sharedInstance] nowPlayingApplication] bundleIdentifier], [[%c(SBMediaController) sharedInstance] nowPlayingTitle], [[%c(SBMediaController) sharedInstance] nowPlayingArtist], [[%c(SBMediaController) sharedInstance] nowPlayingAlbum]] : item.seedBulletin.sectionID];
+				NSString *key = [@"FPICON_" stringByAppendingString:isMusic ? [NSString stringWithFormat:@"FPMUSIC_%@%@%@%@", mediaController.nowPlayingApplication.bundleIdentifier, mediaController.nowPlayingTitle, mediaController.nowPlayingArtist, mediaController.nowPlayingAlbum] : item.seedBulletin.sectionID];
 
-				if ([cache objectForKey:key]) {
-					iconView.image = [cache objectForKey:key];
-				} else if (isMusic) {
-					iconView.image = [UIImage imageWithData:[[[%c(SBMediaController) sharedInstance] _nowPlayingInfo] objectForKey:@"artworkData"]];
-					[cache setObject:[iconView.image retain] forKey:key];
-				} else {
-					SBApplication *app = [[%c(SBApplicationController) sharedInstance] applicationWithDisplayIdentifier:item.seedBulletin.sectionID];
+				if (!cache[key]) {
+					if (isMusic) {
+						cache[key] = HBFPResizeImage([UIImage imageWithData:mediaController._nowPlayingInfo[@"artworkData"]], CGSizeMake(120.f, 120.f));
+					} else {
+						SBApplication *app = [[[%c(SBApplicationController) sharedInstance] applicationWithDisplayIdentifier:item.seedBulletin.sectionID] autorelease];
 
-					if (app) {
-						SBApplicationIcon *appIcon = [[%c(SBApplicationIcon) alloc] initWithApplication:app];
-						[app release];
-						UIImage *icon = [appIcon getIconImage:SBApplicationIconFormatDefault];
+						if (app) {
+							SBApplicationIcon *appIcon = [[[%c(SBApplicationIcon) alloc] initWithApplication:app] autorelease];
+							UIImage *icon = [appIcon getIconImage:SBApplicationIconFormatDefault];
 
-						if (icon) {
-							[appIcon release];
-
-							iconView.image = icon;
-							[cache setObject:[icon retain] forKey:key];
+							if (icon) {
+								cache[key] = icon;
+							}
 						}
 					}
 				}
+
+				iconView.image = cache[key];
 			}
 
-			UIColor *tint = [UIColor whiteColor];
-			NSString *key = isMusic ? [NSString stringWithFormat:@"FPMUSIC_%@%@%@%@", [[[%c(SBMediaController) sharedInstance] nowPlayingApplication] bundleIdentifier], [[%c(SBMediaController) sharedInstance] nowPlayingTitle], [[%c(SBMediaController) sharedInstance] nowPlayingArtist], [[%c(SBMediaController) sharedInstance] nowPlayingAlbum]] : item.seedBulletin.sectionID;
+			NSString *key = isMusic ? [NSString stringWithFormat:@"FPMUSIC_%@%@%@%@", mediaController.nowPlayingApplication.bundleIdentifier, mediaController.nowPlayingTitle, mediaController.nowPlayingArtist, mediaController.nowPlayingAlbum] : item.seedBulletin.sectionID;
 			NSArray *colors = [prefs objectForKey:[NSString stringWithFormat:@"Tint-%@", item.seedBulletin.sectionID]];
 
-			if ([cache objectForKey:key]) {
-				tint = [cache objectForKey:key];
-			} else if (colors && colors.count == 3) {
-				tint = [UIColor colorWithRed:((NSNumber *)[colors objectAtIndex:0]).floatValue green:((NSNumber *)[colors objectAtIndex:1]).floatValue blue:((NSNumber *)[colors objectAtIndex:2]).floatValue alpha:1];
-			} else {
-				tint = HBFPGetDominantColor(iconView.image) ?: [UIColor whiteColor];
-				[cache setObject:[tint retain] forKey:key];
+			if (!cache[key]) {
+				if (colors && colors.count == 3) {
+					cache[key] = [UIColor colorWithRed:((NSNumber *)colors[0]).floatValue green:((NSNumber *)colors[1]).floatValue blue:((NSNumber *)colors[2]).floatValue alpha:1];
+				} else {
+					cache[key] = HBFPGetDominantColor(iconView.image) ?: [UIColor whiteColor];
+				}
 			}
+
+			UIColor *tint = cache[key] ?: [UIColor whiteColor];
 
 			bannerView.image = nil;
 
