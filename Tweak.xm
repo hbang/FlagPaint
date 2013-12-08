@@ -10,6 +10,7 @@
 #import <SpringBoard/SBApplicationController.h>
 #import <SpringBoard/SBApplicationIcon.h>
 #import <SpringBoard/SBMediaController.h>
+#import <Accelerate/Accelerate.h>
 
 struct pixel {
 	unsigned char r, g, b, a;
@@ -70,6 +71,71 @@ UIColor *HBFPGetDominantColor(UIImage *image) {
 	free(pixels);
 
 	return [UIColor colorWithRed:red / 255.f green:green / 255.f blue:blue / 255.f alpha:1];
+}
+
+#pragma mark - Resize image
+
+// http://stackoverflow.com/a/10099016/709376
+
+UIImage *HBFPResizeImage(UIImage *oldImage, CGSize newSize) {
+	if (!oldImage) {
+		return nil;
+	}
+
+	UIImage *newImage = nil;
+
+	CGImageRef cgImage = oldImage.CGImage;
+	NSUInteger oldWidth = CGImageGetWidth(cgImage);
+	NSUInteger oldHeight = CGImageGetHeight(cgImage);
+	CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+
+	pixel *oldData = (pixel *)calloc(oldHeight * oldWidth * BytesPerPixel, sizeof(pixel));
+	NSUInteger oldBytesPerRow = BytesPerPixel * oldWidth;
+
+	CGContextRef context = CGBitmapContextCreate(oldData, oldWidth, oldHeight, BitsPerComponent, oldBytesPerRow, colorSpace, kCGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Big);
+	CGContextDrawImage(context, CGRectMake(0, 0, oldWidth, oldHeight), cgImage);
+	CGContextRelease(context);
+
+	NSUInteger newWidth = (NSUInteger)newSize.width;
+	NSUInteger newHeight = (NSUInteger)newSize.height;
+	NSUInteger newBytesPerRow = BytesPerPixel * newWidth;
+	pixel *newData = (pixel *)calloc(newHeight * newWidth * BytesPerPixel, sizeof(pixel));
+
+	vImage_Buffer oldBuffer = {
+		.data = oldData,
+		.height = oldHeight,
+		.width = oldWidth,
+		.rowBytes = oldBytesPerRow
+	};
+
+	vImage_Buffer newBuffer = {
+		.data = newData,
+		.height = newHeight,
+		.width = newWidth,
+		.rowBytes = newBytesPerRow
+	};
+
+	vImage_Error error = vImageScale_ARGB8888(&oldBuffer, &newBuffer, NULL, kvImageHighQualityResampling);
+
+	free(oldData);
+
+	CGContextRef newContext = CGBitmapContextCreate(newData, newWidth, newHeight, BitsPerComponent, newBytesPerRow, colorSpace, kCGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Big);
+	CGImageRef cgImageNew = CGBitmapContextCreateImage(newContext);
+
+	newImage = [UIImage imageWithCGImage:cgImageNew];
+
+	CGImageRelease(cgImageNew);
+	CGColorSpaceRelease(colorSpace);
+	CGContextRelease(newContext);
+
+	free(newData);
+
+	if (error != kvImageNoError) {
+		NSLog(@"warning: failed to scale image: error %ld", error);
+		return oldImage;
+	}
+
+	return newImage;
 }
 
 #pragma mark - Banner hooks
