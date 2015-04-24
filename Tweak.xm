@@ -159,7 +159,7 @@ void HBFPAddGradientToLayer(CAGradientLayer *layer, UIImage *image, BOOL isMusic
 	CGFloat hue, saturation, brightness;
 
 	if ([tint getHue:&hue saturation:&saturation brightness:&brightness alpha:nil]) {
-		layer.colors = oldStyle ? @[ (id)tint.CGColor ] : @[ (id)[UIColor colorWithHue:hue saturation:saturation brightness:MIN(1, brightness * 2.f) alpha:1].CGColor, (id)tint.CGColor ];
+		layer.colors = @[ oldStyle ? (id)tint.CGColor : (id)[UIColor colorWithHue:hue saturation:saturation brightness:MIN(1, brightness * 2.f) alpha:1].CGColor, (id)tint.CGColor ];
 		layer.borderColor = [UIColor colorWithHue:hue saturation:saturation brightness:MIN(1, brightness * 1.08f) alpha:0.9f].CGColor;
 		layer.borderWidth = 1.f;
 	}
@@ -168,7 +168,7 @@ void HBFPAddGradientToLayer(CAGradientLayer *layer, UIImage *image, BOOL isMusic
 BOOL HBFPIsMusic(NSString *sectionID) {
 	SBMediaController *mediaController = [%c(SBMediaController) sharedInstance];
 
-	return !oldStyle && albumArt && mediaController.nowPlayingApplication && mediaController.nowPlayingApplication.class == %c(SBApplication) && [sectionID isEqualToString:mediaController.nowPlayingApplication.bundleIdentifier] && mediaController._nowPlayingInfo[@"artworkData"];
+	return !oldStyle && albumArt && mediaController.nowPlayingApplication && mediaController.nowPlayingApplication.class == %c(SBApplication) && ([sectionID isEqualToString:mediaController.nowPlayingApplication.bundleIdentifier] || [sectionID isEqualToString:@"com.apple.Music"]) && mediaController._nowPlayingInfo[@"artworkData"];
 }
 
 NSString *HBFPGetKey(NSString *sectionID, BOOL isMusic) {
@@ -203,6 +203,10 @@ NSString *HBFPGetKey(NSString *sectionID, BOOL isMusic) {
 				imageGradientLayer.startPoint = CGPointMake(0.5f, 0.5f);
 				imageGradientLayer.endPoint = CGPointMake(1.f, 0.5f);
 				iconView.layer.mask = imageGradientLayer;
+			}
+
+			if (isMusic) {
+				iconView.layer.minificationFilter = kCAFilterTrilinear;
 			}
 
 			if (!oldStyle) {
@@ -254,6 +258,8 @@ NSString *HBFPGetKey(NSString *sectionID, BOOL isMusic) {
 
 				if (bigIcon) {
 					iconView.layer.cornerRadius = 5.f;
+					iconView.layer.masksToBounds = YES;
+					iconView.layer.shouldRasterize = YES;
 				}
 			}
 
@@ -421,13 +427,37 @@ NSString *HBFPGetKey(NSString *sectionID, BOOL isMusic) {
 
 			HBFPAddGradientToLayer((CAGradientLayer *)backgroundView.layer, iconView.image, isMusic, key, item.sectionID);
 
-			if (!oldStyle && isMusic) {
-				if (!iconCache[key]) {
-					iconCache[key] = HBFPResizeImage([UIImage imageWithData:((SBMediaController *)[%c(SBMediaController) sharedInstance])._nowPlayingInfo[@"artworkData"]], CGSizeMake(120.f, 120.f));
-				}
+			if (!oldStyle) {
+				UIView *bulletinView = MSHookIvar<UIView *>(self, "bulletinView");
+				HBFPBlurryLabel *titleLabel = MSHookIvar<HBFPBlurryLabel *>(bulletinView, "_titleLabel");
+				HBFPBlurryLabel *detailLabel = MSHookIvar<HBFPBlurryLabel *>(bulletinView, "_detailLabel");
 
-				iconView.image = iconCache[key];
-				iconView.layer.cornerRadius = 4.f;
+				titleLabel.textColor = [UIColor whiteColor];
+				detailLabel.textColor = [UIColor whiteColor];
+
+				object_setClass(titleLabel, HBFPBlurryLabel.class);
+				object_setClass(detailLabel, HBFPBlurryLabel.class);
+
+				if (isMusic) {
+					if (!iconCache[key]) {
+						iconCache[key] = HBFPResizeImage([UIImage imageWithData:((SBMediaController *)[%c(SBMediaController) sharedInstance])._nowPlayingInfo[@"artworkData"]], CGSizeMake(120.f, 120.f));
+					}
+
+					iconView.image = iconCache[key];
+					iconView.layer.cornerRadius = 6.f;
+					iconView.layer.masksToBounds = YES;
+					iconView.layer.minificationFilter = kCAFilterTrilinear;
+					iconView.layer.shouldRasterize = YES;
+				}
+			}
+
+			UIView *buttonsView = MSHookIvar<UIView *>(self, "buttonsView");
+			UIButton *topButton = MSHookIvar<UIButton *>(buttonsView, "topButton");
+			UIButton *bottomButton = MSHookIvar<UIButton *>(buttonsView, "bottomButton");
+
+			for (UIButton *button in @[ topButton, bottomButton ]) {
+				UIImageView *backgroundView = MSHookIvar<UIImageView *>(button, "_backgroundView");
+				backgroundView.alpha = 0.4f;
 			}
 		}
 
